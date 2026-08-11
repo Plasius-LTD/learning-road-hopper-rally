@@ -19,7 +19,11 @@ Road Hopper Rally is extracted from the site into an immutable reference-module 
 
 The adapter validates a project, creates a fresh evaluator, evaluates the six files in canonical order, and calls the documented global callbacks. JSON-compatible state crosses the QuickJS boundary. The host validates every returned frame and terminates the realm on validation, deadline, memory, or session failure.
 
-Protected scenarios live only in the `server` entry point. They use the same evaluator and public contracts but are excluded from the root and browser-worker dependency graphs.
+Protected scenario implementations live only in the `server` entry point.
+Trusted authoring tools may use the root manifest, which includes facilitator
+metadata. Learner clients use the `/browser` and `/browser-worker` entry points;
+their built artifacts exclude facilitator metadata, scenario implementations,
+protected goal text, and answer-key identifiers.
 
 ## Completion
 

@@ -6,7 +6,8 @@ The package owns content and portable runtime behavior. React, HTTP, authenticat
 
 ## Public entry points
 
-- `@plasius/learning-road-hopper-rally`: learner-safe course manifest, starter project, validators, deterministic engine, renderer/input/audio contracts, and evaluator factory.
+- `@plasius/learning-road-hopper-rally`: trusted authoring manifest (including facilitator metadata), starter project, validators, deterministic engine, renderer/input/audio contracts, and evaluator factory.
+- `@plasius/learning-road-hopper-rally/browser`: learner-bundle-safe contracts, runtime limits, starter project, assets, transport validators, and evaluator factory; it contains no facilitator or protected assessment content.
 - `@plasius/learning-road-hopper-rally/browser-worker`: bounded worker request handler for preview adapters.
 - `@plasius/learning-road-hopper-rally/server`: deterministic mission and final assessment. Never bundle this entry point into a learner client.
 
@@ -39,6 +40,11 @@ session.dispose();
 
 console.log(ROAD_HOPPER_RALLY_COURSE_V2.missions.length, frame.semanticState);
 ```
+
+Browser adapters must import their runtime and transport contracts from the
+`/browser` entry point and obtain the learner course projection from their
+authenticated server API. The package verifier scans both browser artifacts
+and the worker artifacts for protected-content markers before publication.
 
 ## Development
 
