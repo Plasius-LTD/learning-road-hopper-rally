@@ -1,4 +1,4 @@
-import { ROAD_HOPPER_MISSION_STAGE_ORDER_V2 } from "./course.js";
+import { ROAD_HOPPER_MISSION_STAGE_ORDER_V2 } from "./constants.js";
 import {
   ROAD_HOPPER_FILE_IDS,
   type RoadHopperAudioCueV1,

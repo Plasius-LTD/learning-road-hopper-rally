@@ -1,7 +1,7 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: ["src/index.ts", "src/browser-worker.ts", "src/server.ts"],
+  entry: ["src/index.ts", "src/browser.ts", "src/browser-worker.ts", "src/server.ts"],
   dts: true,
   sourcemap: true,
   clean: true,

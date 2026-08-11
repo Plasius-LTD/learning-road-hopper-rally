@@ -4,7 +4,7 @@ import {
   type QuickJSContext,
   type QuickJSRuntime,
 } from "quickjs-emscripten";
-import { ROAD_HOPPER_RUNTIME_LIMITS_V1 } from "./course.js";
+import { ROAD_HOPPER_RUNTIME_LIMITS_V1 } from "./constants.js";
 import type {
   RoadHopperEvaluatorOptionsV1,
   RoadHopperEvaluatorV1,

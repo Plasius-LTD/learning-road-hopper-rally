@@ -18,6 +18,9 @@ const required = [
   "dist/index.js",
   "dist/index.cjs",
   "dist/index.d.ts",
+  "dist/browser.js",
+  "dist/browser.cjs",
+  "dist/browser.d.ts",
   "dist/browser-worker.js",
   "dist/browser-worker.cjs",
   "dist/browser-worker.d.ts",
@@ -36,13 +39,14 @@ if (missing.length > 0) {
 }
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-for (const exportName of [".", "./browser-worker", "./server"]) {
+for (const exportName of [".", "./browser", "./browser-worker", "./server"]) {
   if (!packageJson.exports?.[exportName]) {
     throw new Error(`Missing package export ${exportName}`);
   }
 }
 
 const rootCjs = require(path.join(root, "dist/index.cjs"));
+const browserSafeCjs = require(path.join(root, "dist/browser.cjs"));
 const browserCjs = require(path.join(root, "dist/browser-worker.cjs"));
 const serverCjs = require(path.join(root, "dist/server.cjs"));
 if (typeof rootCjs.createRoadHopperProgramSession !== "function") {
@@ -53,6 +57,15 @@ if (Object.hasOwn(rootCjs, "assessRoadHopperProject")) {
 }
 if (typeof browserCjs.createRoadHopperWorkerMessageHandler !== "function") {
   throw new Error("Browser worker CommonJS export is unavailable");
+}
+if (typeof browserSafeCjs.parseRoadHopperProject !== "function") {
+  throw new Error("Browser-safe CommonJS contract export is unavailable");
+}
+for (const browserFile of ["dist/browser.js", "dist/browser.cjs", "dist/browser-worker.js", "dist/browser-worker.cjs"]) {
+  const source = fs.readFileSync(path.join(root, browserFile), "utf8");
+  if (/protectedScenario|answerKey|protectedGoal|road-hopper-board-complete/u.test(source)) {
+    throw new Error(`Protected assessment content leaked into ${browserFile}`);
+  }
 }
 if (typeof serverCjs.assessRoadHopperProject !== "function") {
   throw new Error("Server CommonJS assessment export is unavailable");

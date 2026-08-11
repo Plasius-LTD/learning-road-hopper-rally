@@ -1,10 +1,13 @@
+/** Browser-safe public surface: no facilitator content or protected assessment scenarios. */
 export * from "./types.js";
 export * from "./constants.js";
 export * from "./starter.js";
-export * from "./course.js";
-export * from "./validation.js";
-export * from "./engine.js";
 export * from "./assets.js";
+export {
+  parseRoadHopperFrame,
+  parseRoadHopperInputCommand,
+  parseRoadHopperProject,
+} from "./validation.js";
 export {
   RoadHopperEvaluationError,
   createRoadHopperEvaluator,
