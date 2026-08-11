@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  ROAD_HOPPER_RALLY_AUDIO_SEQUENCE_V1,
   ROAD_HOPPER_FILE_IDS,
   ROAD_HOPPER_MISSION_STAGE_ORDER_V2,
   ROAD_HOPPER_RALLY_COURSE_V2,
@@ -48,6 +49,16 @@ describe("Road Hopper Rally course", () => {
       expect(asset.licence).toBe("Apache-2.0");
       expect(asset.originalWork).toBe(true);
     }
+  });
+
+  it("exports the original captioned audio sequence for renderer hosts", () => {
+    expect(ROAD_HOPPER_RALLY_AUDIO_SEQUENCE_V1.cues.home).toEqual({
+      waveform: "triangle",
+      frequencyHz: 880,
+      durationMs: 240,
+      caption: "Home reached",
+    });
+    expect(Object.isFrozen(ROAD_HOPPER_RALLY_AUDIO_SEQUENCE_V1.cues)).toBe(true);
   });
 });
 
