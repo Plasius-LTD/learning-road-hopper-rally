@@ -5,9 +5,13 @@ import {
   type RoadHopperCourseManifestV2,
   type RoadHopperCourseValidationIssueV1,
   type RoadHopperDrawCommandV1,
+  type RoadHopperAssessmentRequestV1,
+  type RoadHopperAssessmentResultV1,
   type RoadHopperFrameV1,
   type RoadHopperInputCommandV1,
+  type RoadHopperProgressV1,
   type RoadHopperProjectV1,
+  type RoadHopperSavedVersionV1,
   type RoadHopperSemanticStateV1,
 } from "./types.js";
 
@@ -24,9 +28,23 @@ const inputActions = new Set([
 const inputSources = new Set(["keyboard", "touch", "assessment"]);
 const colourPattern = /^#[0-9a-f]{6}$/iu;
 const identifierPattern = /^[a-z0-9][a-z0-9.-]{0,79}$/u;
+const transportIdPattern = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/u;
+const logicalEtagPattern = /^"revision-(0|[1-9][0-9]*)"$/u;
+const errorCodePattern = /^[A-Z][A-Z0-9_]{0,79}$/u;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function hasOnlyKeys(value: Record<string, unknown>, allowed: readonly string[]): boolean {
+  const keys = Object.keys(value);
+  return keys.length <= allowed.length && keys.every((key) => allowed.includes(key));
+}
+
+function isIsoDate(value: unknown): value is string {
+  if (typeof value !== "string" || value.length > 40) return false;
+  const milliseconds = Date.parse(value);
+  return Number.isFinite(milliseconds) && new Date(milliseconds).toISOString() === value;
 }
 
 function finiteInteger(value: unknown, minimum: number, maximum: number): value is number {
@@ -161,6 +179,170 @@ export function parseRoadHopperProject(value: unknown): RoadHopperProjectV1 {
     schemaVersion: "1",
     starterRevision: value.starterRevision,
     files: Object.freeze(parsedFiles),
+  });
+}
+
+function parseTransportId(value: unknown, errorCode: string): string {
+  if (typeof value !== "string" || !transportIdPattern.test(value)) {
+    throw new Error(errorCode);
+  }
+  return value;
+}
+
+function parseStringIds(value: unknown, maximum: number, errorCode: string): readonly string[] {
+  if (
+    !Array.isArray(value)
+    || value.length > maximum
+    || value.some((entry) => typeof entry !== "string" || !identifierPattern.test(entry))
+    || new Set(value).size !== value.length
+  ) {
+    throw new Error(errorCode);
+  }
+  return Object.freeze([...value]) as readonly string[];
+}
+
+/** Parse the authoritative current-attempt transport contract. */
+export function parseRoadHopperProgress(value: unknown): RoadHopperProgressV1 {
+  if (
+    !isRecord(value)
+    || !hasOnlyKeys(value, [
+      "schemaVersion", "attemptId", "revision", "etag", "project",
+      "currentStageId", "completedStageIds", "completedAt",
+      "fullscreenUnlocked", "savedAt",
+    ])
+    || value.schemaVersion !== "1"
+    || !finiteInteger(value.revision, 0, Number.MAX_SAFE_INTEGER)
+    || typeof value.etag !== "string"
+    || !logicalEtagPattern.test(value.etag)
+    || value.etag !== `"revision-${value.revision}"`
+    || typeof value.currentStageId !== "string"
+    || !identifierPattern.test(value.currentStageId)
+    || typeof value.fullscreenUnlocked !== "boolean"
+    || !isIsoDate(value.savedAt)
+    || (value.completedAt !== undefined && !isIsoDate(value.completedAt))
+  ) {
+    throw new Error("ROAD_HOPPER_PROGRESS_INVALID");
+  }
+  const attemptId = parseTransportId(value.attemptId, "ROAD_HOPPER_PROGRESS_INVALID");
+  const project = parseRoadHopperProject(value.project);
+  const completedStageIds = parseStringIds(
+    value.completedStageIds,
+    54,
+    "ROAD_HOPPER_PROGRESS_INVALID",
+  );
+  return Object.freeze({
+    schemaVersion: "1",
+    attemptId,
+    revision: value.revision,
+    etag: value.etag,
+    project,
+    currentStageId: value.currentStageId,
+    completedStageIds,
+    ...(value.completedAt === undefined ? {} : { completedAt: value.completedAt }),
+    fullscreenUnlocked: value.fullscreenUnlocked,
+    savedAt: value.savedAt,
+  });
+}
+
+/** Parse one immutable, server-numbered source snapshot. */
+export function parseRoadHopperSavedVersion(value: unknown): RoadHopperSavedVersionV1 {
+  if (
+    !isRecord(value)
+    || !hasOnlyKeys(value, [
+      "schemaVersion", "versionId", "number", "attemptId",
+      "projectRevision", "project", "createdAt",
+    ])
+    || value.schemaVersion !== "1"
+    || !finiteInteger(value.number, 1, Number.MAX_SAFE_INTEGER)
+    || !finiteInteger(value.projectRevision, 0, Number.MAX_SAFE_INTEGER)
+    || !isIsoDate(value.createdAt)
+  ) {
+    throw new Error("ROAD_HOPPER_SAVED_VERSION_INVALID");
+  }
+  return Object.freeze({
+    schemaVersion: "1",
+    versionId: parseTransportId(value.versionId, "ROAD_HOPPER_SAVED_VERSION_INVALID"),
+    number: value.number,
+    attemptId: parseTransportId(value.attemptId, "ROAD_HOPPER_SAVED_VERSION_INVALID"),
+    projectRevision: value.projectRevision,
+    project: parseRoadHopperProject(value.project),
+    createdAt: value.createdAt,
+  });
+}
+
+/** Strictly parse the only client payload accepted by an assessment worker. */
+export function parseRoadHopperAssessmentRequest(value: unknown): RoadHopperAssessmentRequestV1 {
+  if (
+    !isRecord(value)
+    || !hasOnlyKeys(value, ["schemaVersion", "attemptId", "projectRevision", "scope"])
+    || value.schemaVersion !== "1"
+    || !finiteInteger(value.projectRevision, 0, Number.MAX_SAFE_INTEGER)
+    || !isRecord(value.scope)
+  ) {
+    throw new Error("ROAD_HOPPER_ASSESSMENT_REQUEST_INVALID");
+  }
+  const attemptId = parseTransportId(
+    value.attemptId,
+    "ROAD_HOPPER_ASSESSMENT_REQUEST_INVALID",
+  );
+  const scope = value.scope;
+  if (scope.kind === "final" && hasOnlyKeys(scope, ["kind"])) {
+    return Object.freeze({
+      schemaVersion: "1",
+      attemptId,
+      projectRevision: value.projectRevision,
+      scope: Object.freeze({ kind: "final" }),
+    });
+  }
+  if (
+    scope.kind === "mission"
+    && hasOnlyKeys(scope, ["kind", "missionId"])
+    && typeof scope.missionId === "string"
+    && identifierPattern.test(scope.missionId)
+  ) {
+    return Object.freeze({
+      schemaVersion: "1",
+      attemptId,
+      projectRevision: value.projectRevision,
+      scope: Object.freeze({ kind: "mission", missionId: scope.missionId }),
+    });
+  }
+  throw new Error("ROAD_HOPPER_ASSESSMENT_REQUEST_INVALID");
+}
+
+/** Parse bounded server assessment output before it crosses a transport boundary. */
+export function parseRoadHopperAssessmentResult(value: unknown): RoadHopperAssessmentResultV1 {
+  if (
+    !isRecord(value)
+    || !hasOnlyKeys(value, [
+      "schemaVersion", "outcome", "score", "completed", "passedGoalIds",
+      "failedGoalIds", "errorCode",
+    ])
+    || value.schemaVersion !== "1"
+    || (value.outcome !== "completed" && value.outcome !== "error" && value.outcome !== "timeout")
+    || !finiteNumber(value.score, 0, 100)
+    || typeof value.completed !== "boolean"
+    || (value.errorCode !== undefined
+      && (typeof value.errorCode !== "string" || !errorCodePattern.test(value.errorCode)))
+  ) {
+    throw new Error("ROAD_HOPPER_ASSESSMENT_RESULT_INVALID");
+  }
+  return Object.freeze({
+    schemaVersion: "1",
+    outcome: value.outcome,
+    score: value.score,
+    completed: value.completed,
+    passedGoalIds: parseStringIds(
+      value.passedGoalIds,
+      64,
+      "ROAD_HOPPER_ASSESSMENT_RESULT_INVALID",
+    ),
+    failedGoalIds: parseStringIds(
+      value.failedGoalIds,
+      64,
+      "ROAD_HOPPER_ASSESSMENT_RESULT_INVALID",
+    ),
+    ...(value.errorCode === undefined ? {} : { errorCode: value.errorCode }),
   });
 }
 

@@ -5,8 +5,12 @@ export * from "./starter.js";
 export * from "./assets.js";
 export {
   parseRoadHopperFrame,
+  parseRoadHopperAssessmentRequest,
+  parseRoadHopperAssessmentResult,
   parseRoadHopperInputCommand,
+  parseRoadHopperProgress,
   parseRoadHopperProject,
+  parseRoadHopperSavedVersion,
 } from "./validation.js";
 export {
   RoadHopperEvaluationError,

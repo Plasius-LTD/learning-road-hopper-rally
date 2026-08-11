@@ -4,8 +4,12 @@ import {
   ROAD_HOPPER_RALLY_STARTER_PROJECT_V1,
   createRoadHopperEvaluator,
   createRoadHopperProgramSession,
+  parseRoadHopperAssessmentRequest,
+  parseRoadHopperAssessmentResult,
   parseRoadHopperFrame,
   parseRoadHopperInputCommand,
+  parseRoadHopperProgress,
+  parseRoadHopperSavedVersion,
   validateRoadHopperCourseManifest,
   type RoadHopperCourseManifestV2,
 } from "../src/index.js";
@@ -120,6 +124,77 @@ describe("input and frame validation", () => {
     expect(() => parseRoadHopperFrame({ ...base, drawCommands: [{ kind: "rect", x: Infinity, y: 0, width: 1, height: 1, colour: "#ffffff" }] })).toThrow();
     expect(() => parseRoadHopperFrame({ ...base, audioCues: [{ cueId: "!", assetId: "x", category: "sfx", caption: "x" }] })).toThrow();
     expect(() => parseRoadHopperFrame({ ...base, semanticState: { ...base.semanticState, lives: -1 } })).toThrow();
+  });
+});
+
+describe("persistence and assessment transport validation", () => {
+  const progress = {
+    schemaVersion: "1",
+    attemptId: "attempt-1",
+    revision: 2,
+    etag: '"revision-2"',
+    project: ROAD_HOPPER_RALLY_STARTER_PROJECT_V1,
+    currentStageId: ROAD_HOPPER_RALLY_COURSE_V2.missions[0]!.stages[0]!.id,
+    completedStageIds: [],
+    fullscreenUnlocked: false,
+    savedAt: "2026-08-11T12:00:00.000Z",
+  } as const;
+
+  it("parses progress, saved versions and bounded assessment results", () => {
+    expect(parseRoadHopperProgress(progress)).toMatchObject({ revision: 2 });
+    expect(parseRoadHopperSavedVersion({
+      schemaVersion: "1",
+      versionId: "version-1",
+      number: 1,
+      attemptId: progress.attemptId,
+      projectRevision: progress.revision,
+      project: progress.project,
+      createdAt: progress.savedAt,
+    })).toMatchObject({ number: 1 });
+    expect(parseRoadHopperAssessmentResult({
+      schemaVersion: "1",
+      outcome: "completed",
+      score: 100,
+      completed: true,
+      passedGoalIds: ["road-hopper-game-complete"],
+      failedGoalIds: [],
+    })).toMatchObject({ completed: true });
+  });
+
+  it("accepts exact mission/final requests and rejects client-supplied authority", () => {
+    expect(parseRoadHopperAssessmentRequest({
+      schemaVersion: "1",
+      attemptId: progress.attemptId,
+      projectRevision: progress.revision,
+      scope: { kind: "mission", missionId: ROAD_HOPPER_RALLY_COURSE_V2.missions[0]!.id },
+    }).scope).toMatchObject({ kind: "mission" });
+    expect(parseRoadHopperAssessmentRequest({
+      schemaVersion: "1",
+      attemptId: progress.attemptId,
+      projectRevision: progress.revision,
+      scope: { kind: "final" },
+    }).scope).toEqual({ kind: "final" });
+    expect(() => parseRoadHopperAssessmentRequest({
+      schemaVersion: "1",
+      attemptId: progress.attemptId,
+      projectRevision: progress.revision,
+      scope: { kind: "final" },
+      score: 100,
+      source: progress.project,
+    })).toThrow("ROAD_HOPPER_ASSESSMENT_REQUEST_INVALID");
+  });
+
+  it("rejects malformed persisted and assessment transport records", () => {
+    expect(() => parseRoadHopperProgress({ ...progress, etag: '"revision-9"' })).toThrow();
+    expect(() => parseRoadHopperSavedVersion({ schemaVersion: "1" })).toThrow();
+    expect(() => parseRoadHopperAssessmentResult({
+      schemaVersion: "1",
+      outcome: "completed",
+      score: 101,
+      completed: true,
+      passedGoalIds: [],
+      failedGoalIds: [],
+    })).toThrow();
   });
 });
 
