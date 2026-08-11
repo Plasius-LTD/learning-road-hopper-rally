@@ -153,7 +153,7 @@ jobs:
               "repos/${GITHUB_REPOSITORY}/actions/workflows/cd.yml/dispatches" \
               --input -
 
-          echo "Queued tokenless publication of ${RELEASE_TAG} from ${EXPECTED_SHA}."
+          echo "Queued exact-main publication of ${RELEASE_TAG} from ${EXPECTED_SHA}."
 
   validate_and_pack:
     if: inputs.phase == 'publish'
@@ -868,14 +868,19 @@ jobs:
         with:
           subject-path: ${{ steps.release.outputs.sbom_path }}
 
-      - name: Publish package through npm OIDC
+      - name: Publish package with npm provenance
         if: steps.release.outputs.should_publish_npm == 'true'
         env:
           DIST_TAG: ${{ steps.release.outputs.dist_tag }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           TARBALL: ${{ steps.release.outputs.tarball_path }}
         run: |
           set -euo pipefail
 
+          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "The production-scoped NPM_TOKEN is required for package publication." >&2
+            exit 1
+          fi
           PUBLISH_ARGS=(--access public --provenance --registry https://registry.npmjs.org --tag "${DIST_TAG}")
           npm publish "./${TARBALL}" --ignore-scripts "${PUBLISH_ARGS[@]}"
 
