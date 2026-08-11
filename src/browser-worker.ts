@@ -105,7 +105,7 @@ export function createRoadHopperWorkerMessageHandler(
   };
 }
 
-interface RoadHopperWorkerScopeV1 {
+export interface RoadHopperWorkerScopeV1 {
   onmessage: ((event: MessageEvent<RoadHopperWorkerRequestV1>) => void) | null;
   postMessage(response: RoadHopperWorkerResponseV1): void;
 }
@@ -120,13 +120,4 @@ export function installRoadHopperBrowserWorker(
   scope.onmessage = (event) => {
     void handler(event);
   };
-}
-
-const possibleScope = globalThis as unknown as Partial<RoadHopperWorkerScopeV1>;
-if (
-  typeof possibleScope.postMessage === "function"
-  && "onmessage" in possibleScope
-  && typeof (globalThis as { document?: unknown }).document === "undefined"
-) {
-  installRoadHopperBrowserWorker(possibleScope as RoadHopperWorkerScopeV1);
 }

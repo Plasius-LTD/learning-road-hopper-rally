@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   createRoadHopperWorkerMessageHandler,
+  installRoadHopperBrowserWorker,
   type RoadHopperWorkerResponseV1,
 } from "../src/browser-worker.js";
 import { ROAD_HOPPER_RALLY_STARTER_PROJECT_V1 } from "../src/index.js";
@@ -63,5 +64,11 @@ describe("browser worker protocol", () => {
       { id: "safe", outcome: "error", errorCode: "ROAD_HOPPER_WORKER_FAILED" },
     ]);
     expect(JSON.stringify(responses)).not.toContain("synthetic-person");
+  });
+
+  it("installs only when a browser host explicitly supplies its worker scope", () => {
+    const scope = { onmessage: null, postMessage: vi.fn() };
+    installRoadHopperBrowserWorker(scope);
+    expect(scope.onmessage).toBeTypeOf("function");
   });
 });
