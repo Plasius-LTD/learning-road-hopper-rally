@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1",
+  "licence": "Apache-2.0",
+  "originalWork": true,
+  "tempoBpm": 116,
+  "music": {
+    "waveform": "triangle",
+    "notes": ["C5", "E5", "G5", "A5", "G5", "E5", "D5", "G4"],
+    "beats": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+  },
+  "cues": {
+    "hop": { "waveform": "square", "frequencyHz": 520, "durationMs": 55, "caption": "Hop" },
+    "home": { "waveform": "triangle", "frequencyHz": 880, "durationMs": 240, "caption": "Home reached" },
+    "danger": { "waveform": "sawtooth", "frequencyHz": 170, "durationMs": 180, "caption": "Hopper lost" },
+    "level": { "waveform": "sine", "frequencyHz": 1040, "durationMs": 360, "caption": "Next rally level" },
+    "pause": { "waveform": "sine", "frequencyHz": 300, "durationMs": 80, "caption": "Game paused" }
+  }
+}
