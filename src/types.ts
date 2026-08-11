@@ -104,14 +104,38 @@ export interface RoadHopperCourseManifestV2 {
   readonly assets: readonly RoadHopperAssetV1[];
 }
 
-export type RoadHopperLearnerMissionV2 = Omit<
-  RoadHopperMissionV2,
-  "facilitator"
->;
+/** Facilitator-free mission contract safe to publish to a learner client. */
+export interface RoadHopperLearnerMissionV2 {
+  readonly id: string;
+  readonly title: string;
+  readonly summary: string;
+  readonly estimatedMinutes: 75;
+  readonly concepts: readonly string[];
+  readonly editableFileId: RoadHopperFileIdV1;
+  readonly stages: readonly RoadHopperStageV2[];
+  readonly learner: {
+    readonly readinessPrompt: string;
+    readonly goals: readonly RoadHopperVisibleGoalV2[];
+    readonly accessibilityAlternatives: readonly string[];
+    readonly artifactIds: readonly string[];
+  };
+}
 
-export interface RoadHopperLearnerCourseProjectionV2
-  extends Omit<RoadHopperCourseManifestV2, "missions"> {
+/** Complete learner projection without a type dependency on trusted fields. */
+export interface RoadHopperLearnerCourseProjectionV2 {
+  readonly schemaVersion: "2";
+  readonly moduleId: "junior-coder.road-hopper-rally";
+  readonly moduleVersion: "2.0.0";
+  readonly contentRevision: string;
+  readonly title: "Road Hopper Rally";
+  readonly estimatedMinutes: 450;
+  readonly navigation: "open";
+  readonly completionAuthority: "server-final-assessment";
+  readonly fullscreenUnlock: "historical-completion";
   readonly missions: readonly RoadHopperLearnerMissionV2[];
+  readonly starterProject: RoadHopperProjectV1;
+  readonly runtimeLimits: RoadHopperRuntimeLimitsV1;
+  readonly assets: readonly RoadHopperAssetV1[];
 }
 
 export interface RoadHopperCourseValidationIssueV1 {

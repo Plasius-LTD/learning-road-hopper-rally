@@ -63,7 +63,7 @@ if (typeof browserSafeCjs.parseRoadHopperProject !== "function") {
 }
 for (const browserFile of ["dist/browser.js", "dist/browser.cjs", "dist/browser-worker.js", "dist/browser-worker.cjs"]) {
   const source = fs.readFileSync(path.join(root, browserFile), "utf8");
-  if (/protectedScenario|answerKey|protectedGoal|road-hopper-board-complete/u.test(source)) {
+  if (/facilitator|protectedScenario|answerKey|protectedGoal|road-hopper-board-complete/u.test(source)) {
     throw new Error(`Protected assessment content leaked into ${browserFile}`);
   }
 }
