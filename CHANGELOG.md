@@ -5,6 +5,20 @@ All notable changes to this package are documented here.
 ## Unreleased
 
 - **Added**
+  - (placeholder)
+
+- **Changed**
+  - (placeholder)
+
+- **Fixed**
+  - (placeholder)
+
+- **Security**
+  - (placeholder)
+
+## [1.1.0] - 2026-08-24
+
+- **Added**
   - Add the immutable Road Hopper Rally 2.1 course export with 54 mission-specific, learner-safe evidence activities.
   - Add a separately versioned 2.1 diagnostic starter and a server-only assessment-goal helper for fail-closed worker adapters.
 
@@ -24,3 +38,4 @@ All notable changes to this package are documented here.
 
 
 [1.0.0]: https://github.com/Plasius-LTD/learning-road-hopper-rally/releases/tag/v1.0.0
+[1.1.0]: https://github.com/Plasius-LTD/learning-road-hopper-rally/releases/tag/v1.1.0
