@@ -4,10 +4,14 @@ import {
   ROAD_HOPPER_FILE_IDS,
   ROAD_HOPPER_MISSION_STAGE_ORDER_V2,
   ROAD_HOPPER_RALLY_COURSE_V2,
+  ROAD_HOPPER_RALLY_COURSE_V3,
   ROAD_HOPPER_RALLY_STARTER_PROJECT_V1,
+  ROAD_HOPPER_RALLY_STARTER_PROJECT_V2,
   createRoadHopperLearnerProjection,
+  createRoadHopperLearnerProjectionV3,
   parseRoadHopperProject,
   validateRoadHopperCourseManifest,
+  validateRoadHopperCourseManifestV3,
 } from "../src/index.js";
 
 describe("Road Hopper Rally course", () => {
@@ -25,6 +29,44 @@ describe("Road Hopper Rally course", () => {
       );
     }
     expect(validateRoadHopperCourseManifest(course)).toEqual([]);
+  });
+
+  it("publishes an additive evidence-led 2.1 course without changing 2.0", () => {
+    const course = ROAD_HOPPER_RALLY_COURSE_V3;
+
+    expect(ROAD_HOPPER_RALLY_COURSE_V2.moduleVersion).toBe("2.0.0");
+    expect(course.schemaVersion).toBe("3");
+    expect(course.moduleVersion).toBe("2.1.0");
+    expect(course.starterProject).toBe(ROAD_HOPPER_RALLY_STARTER_PROJECT_V2);
+    expect(course.missions.flatMap((mission) => mission.stages)).toHaveLength(54);
+    expect(validateRoadHopperCourseManifestV3(course)).toEqual([]);
+
+    for (const mission of course.missions) {
+      expect(mission.stages.map((stage) => stage.kind)).toEqual(
+        ROAD_HOPPER_MISSION_STAGE_ORDER_V2,
+      );
+      expect(new Set(mission.stages.map((stage) => stage.activity.kind)).size).toBe(9);
+      expect(mission.stages.every((stage) => stage.instruction.includes(mission.editableFileId))).toBe(true);
+      expect(mission.stages.find((stage) => stage.kind === "build")?.activity).toMatchObject({
+        kind: "build",
+        editRequired: true,
+      });
+      expect(mission.stages.find((stage) => stage.kind === "reward")?.activity).toMatchObject({
+        kind: "reward",
+        requiredStageKinds: ROAD_HOPPER_MISSION_STAGE_ORDER_V2.slice(0, 8),
+      });
+    }
+  });
+
+  it("keeps 2.1 protected content out of the learner projection", () => {
+    const learner = createRoadHopperLearnerProjectionV3(ROAD_HOPPER_RALLY_COURSE_V3);
+    const serialized = JSON.stringify(learner);
+
+    expect(serialized).not.toContain("facilitator");
+    expect(serialized).not.toContain("protectedScenarioIds");
+    expect(serialized).not.toContain("answerKey");
+    expect(serialized).not.toContain("protectedGoal");
+    expect(learner.missions.flatMap((mission) => mission.stages)).toHaveLength(54);
   });
 
   it("keeps facilitator answers and protected scenarios out of learner data", () => {

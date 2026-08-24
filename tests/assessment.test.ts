@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
-import type { RoadHopperProjectV1 } from "../src/index.js";
-import { assessRoadHopperProject } from "../src/server.js";
+import {
+  ROAD_HOPPER_RALLY_COURSE_V3,
+  ROAD_HOPPER_RALLY_STARTER_PROJECT_V2,
+  type RoadHopperProjectV1,
+} from "../src/index.js";
+import {
+  assessRoadHopperProject,
+  getRoadHopperAssessmentGoalIds,
+} from "../src/server.js";
 
 const referenceProject: RoadHopperProjectV1 = {
   schemaVersion: "1",
@@ -31,7 +38,7 @@ function moveHopper(hopper, action) {
 function updateTraffic(vehicles, tick, level) {
   return vehicles.map((vehicle) => ({
     ...vehicle,
-    x: (vehicle.x + vehicle.speed * (1 + level * 0.1)) % 14,
+    x: ((vehicle.x + vehicle.speed * (1 + level * 0.1)) % 14 + 14) % 14,
   }));
 }
 function hitsVehicle(hopper, vehicles) {
@@ -55,6 +62,7 @@ function applyRoadHopperRules(state, event) {
   if (event.type === "home") next.score += 50 + event.timeBonus;
   if (event.type === "bonus") next.score += event.points;
   if (event.type === "death") next.lives -= 1;
+  if (event.type === "timeout") next.lives -= 1;
   if (event.type === "level-complete") {
     next.level += 1;
     next.difficulty = 1 + next.level * 0.1;
@@ -77,6 +85,13 @@ function createRoadHopperGame(seed) {
   };
 }
 function updateRoadHopperGame(state, input) {
+  if (input && input.phase === "pressed" && input.action === "restart") {
+    return createRoadHopperGame(state.seed);
+  }
+  if (input && input.phase === "pressed" && input.action === "pause") {
+    return { ...state, paused: !state.paused };
+  }
+  if (state.paused) return { ...state };
   const next = { ...state, tick: state.tick + 1, timerTicksRemaining: state.timerTicksRemaining - 1 };
   if (input && input.phase === "pressed" && ["up", "down", "left", "right"].includes(input.action)) {
     next.hopper = moveHopper(state.hopper, input.action);
@@ -94,7 +109,7 @@ function renderRoadHopperGame(state) {
     semanticState: {
       statusText: "Player " + state.currentPlayer + ", score " + state.score,
       score: state.score, lives: state.lives, level: state.level,
-      currentPlayer: state.currentPlayer, paused: false, gameOver: state.gameOver,
+      currentPlayer: state.currentPlayer, paused: state.paused === true, gameOver: state.gameOver,
       timerTicksRemaining: state.timerTicksRemaining
     }
   };
@@ -103,6 +118,25 @@ function renderRoadHopperGame(state) {
 };
 
 describe("server-only deterministic assessment", () => {
+  it("requires learner work before any starter mission can pass", async () => {
+    for (const mission of ROAD_HOPPER_RALLY_COURSE_V3.missions) {
+      const scope = { kind: "mission" as const, missionId: mission.id };
+      const result = await assessRoadHopperProject(
+        ROAD_HOPPER_RALLY_STARTER_PROJECT_V2,
+        scope,
+      );
+
+      expect(result.outcome).toBe("completed");
+      expect(result.score).toBeLessThan(100);
+      expect(result.completed).toBe(false);
+      expect(result.failedGoalIds).toEqual(expect.arrayContaining(
+        getRoadHopperAssessmentGoalIds(scope).filter(
+          (goalId) => goalId !== "road-hopper-sandbox-safety",
+        ),
+      ));
+    }
+  });
+
   it("passes a complete mechanics-equivalent project", async () => {
     const result = await assessRoadHopperProject(referenceProject, {
       kind: "final",
@@ -112,6 +146,33 @@ describe("server-only deterministic assessment", () => {
     expect(result.completed).toBe(true);
     expect(result.score).toBe(100);
     expect(result.failedGoalIds).toEqual([]);
+  });
+
+  it("rejects shape-only board code that does not map the actual route", async () => {
+    const project: RoadHopperProjectV1 = {
+      ...referenceProject,
+      files: {
+        ...referenceProject.files,
+        "board.js": `
+function createBoard() {
+  return {
+    columns: 14,
+    rows: 15,
+    homeBays: [0, 1, 2, 3, 4],
+    roadLanes: [0, 1, 2, 3, 4],
+    riverLanes: [5, 6, 7, 8, 9]
+  };
+}`,
+      },
+    };
+
+    const result = await assessRoadHopperProject(project, {
+      kind: "mission",
+      missionId: "road-hopper-board",
+    });
+
+    expect(result.failedGoalIds).toContain("road-hopper-board-complete");
+    expect(result.score).toBeLessThan(100);
   });
 
   it("fails closed when learner code exceeds its execution deadline", async () => {

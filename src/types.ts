@@ -28,6 +28,85 @@ export interface RoadHopperStageV2 {
   readonly artifactIds: readonly string[];
 }
 
+export interface RoadHopperChoiceOptionV1 {
+  readonly id: string;
+  readonly label: string;
+  readonly feedback: string;
+  readonly correct: boolean;
+}
+
+export interface RoadHopperChoiceCheckV1 {
+  readonly prompt: string;
+  readonly options: readonly RoadHopperChoiceOptionV1[];
+}
+
+/** Learner-safe evidence activity rendered by an adapter for one course stage. */
+export type RoadHopperStageActivityV1 =
+  | {
+      readonly kind: "learn";
+      readonly lesson: readonly string[];
+      readonly check: RoadHopperChoiceCheckV1;
+    }
+  | {
+      readonly kind: "predict";
+      readonly scenario: string;
+      readonly check: RoadHopperChoiceCheckV1;
+    }
+  | {
+      readonly kind: "build";
+      readonly task: string;
+      readonly callbackNames: readonly string[];
+      readonly successCriteria: readonly string[];
+      readonly editRequired: true;
+    }
+  | {
+      readonly kind: "run";
+      readonly task: string;
+      readonly observe: readonly string[];
+      readonly requiresFreshRun: true;
+    }
+  | {
+      readonly kind: "assess";
+      readonly task: string;
+      readonly goalId: string;
+      readonly passingScore: 100;
+      readonly errorOutcome: "fail-closed";
+    }
+  | {
+      readonly kind: "inspect";
+      readonly task: string;
+      readonly check: RoadHopperChoiceCheckV1;
+    }
+  | {
+      readonly kind: "fix";
+      readonly task: string;
+      readonly hint: string;
+      readonly requiresSourceChangeAfterCheck: true;
+      readonly requiresPassingAssessment: true;
+    }
+  | {
+      readonly kind: "explain";
+      readonly prompt: string;
+      readonly minimumCharacters: 40;
+      readonly pointsToInclude: readonly string[];
+      readonly persistResponse: false;
+    }
+  | {
+      readonly kind: "reward";
+      readonly message: string;
+      readonly requiredStageKinds: readonly MissionStageKindV1[];
+    };
+
+export interface RoadHopperStageV3 {
+  readonly id: string;
+  readonly kind: MissionStageKindV1;
+  readonly title: string;
+  readonly instruction: string;
+  readonly editableFileId: RoadHopperFileIdV1;
+  readonly artifactIds: readonly string[];
+  readonly activity: RoadHopperStageActivityV1;
+}
+
 export interface RoadHopperVisibleGoalV2 {
   readonly id: string;
   readonly statement: string;
@@ -133,6 +212,61 @@ export interface RoadHopperLearnerCourseProjectionV2 {
   readonly completionAuthority: "server-final-assessment";
   readonly fullscreenUnlock: "historical-completion";
   readonly missions: readonly RoadHopperLearnerMissionV2[];
+  readonly starterProject: RoadHopperProjectV1;
+  readonly runtimeLimits: RoadHopperRuntimeLimitsV1;
+  readonly assets: readonly RoadHopperAssetV1[];
+}
+
+export interface RoadHopperMissionV3 {
+  readonly id: string;
+  readonly title: string;
+  readonly summary: string;
+  readonly estimatedMinutes: 75;
+  readonly concepts: readonly string[];
+  readonly editableFileId: RoadHopperFileIdV1;
+  readonly stages: readonly RoadHopperStageV3[];
+  readonly learner: RoadHopperMissionV2["learner"];
+  readonly facilitator: RoadHopperMissionV2["facilitator"];
+}
+
+export interface RoadHopperCourseManifestV3 {
+  readonly schemaVersion: "3";
+  readonly moduleId: "junior-coder.road-hopper-rally";
+  readonly moduleVersion: "2.1.0";
+  readonly contentRevision: string;
+  readonly title: "Road Hopper Rally";
+  readonly estimatedMinutes: 450;
+  readonly navigation: "open";
+  readonly completionAuthority: "server-final-assessment";
+  readonly fullscreenUnlock: "historical-completion";
+  readonly missions: readonly RoadHopperMissionV3[];
+  readonly starterProject: RoadHopperProjectV1;
+  readonly runtimeLimits: RoadHopperRuntimeLimitsV1;
+  readonly assets: readonly RoadHopperAssetV1[];
+}
+
+export interface RoadHopperLearnerMissionV3 {
+  readonly id: string;
+  readonly title: string;
+  readonly summary: string;
+  readonly estimatedMinutes: 75;
+  readonly concepts: readonly string[];
+  readonly editableFileId: RoadHopperFileIdV1;
+  readonly stages: readonly RoadHopperStageV3[];
+  readonly learner: RoadHopperMissionV2["learner"];
+}
+
+export interface RoadHopperLearnerCourseProjectionV3 {
+  readonly schemaVersion: "3";
+  readonly moduleId: "junior-coder.road-hopper-rally";
+  readonly moduleVersion: "2.1.0";
+  readonly contentRevision: string;
+  readonly title: "Road Hopper Rally";
+  readonly estimatedMinutes: 450;
+  readonly navigation: "open";
+  readonly completionAuthority: "server-final-assessment";
+  readonly fullscreenUnlock: "historical-completion";
+  readonly missions: readonly RoadHopperLearnerMissionV3[];
   readonly starterProject: RoadHopperProjectV1;
   readonly runtimeLimits: RoadHopperRuntimeLimitsV1;
   readonly assets: readonly RoadHopperAssetV1[];

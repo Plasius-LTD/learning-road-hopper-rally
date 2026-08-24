@@ -15,19 +15,26 @@ The package owns content and portable runtime behavior. React, HTTP, authenticat
 
 Road Hopper Rally 2.0 contains six 75-minute missions. Every mission follows Learn, Predict, Build, Run, Assess, Inspect, Fix, Explain, and Reward, for exactly 54 stages. The editable project always contains `board.js`, `hopper.js`, `traffic.js`, `river.js`, `rules.js`, and `game.js`.
 
+Road Hopper Rally 2.1 is the additive evidence-led revision exported as
+`ROAD_HOPPER_RALLY_COURSE_V3`. It retains the open 6×9 map but gives every
+stage a mission-specific activity contract. Choice stages contain authored
+feedback, code stages declare observable evidence, assessment errors fail
+closed, reflections remain client-only, and rewards require the preceding
+mission evidence. The immutable 2.0 export remains available for rollback.
+
 ## Runtime boundary
 
 Learner code runs in a fresh QuickJS realm with no DOM, network, cookies, storage, dynamic imports, or Plasius account APIs. Source, memory, stack, input, entity, draw-command, audio-cue, callback, and session limits are exported in the immutable course manifest.
 
 ```ts
 import {
-  ROAD_HOPPER_RALLY_COURSE_V2,
-  ROAD_HOPPER_RALLY_STARTER_PROJECT_V1,
+  ROAD_HOPPER_RALLY_COURSE_V3,
+  ROAD_HOPPER_RALLY_STARTER_PROJECT_V2,
   createRoadHopperProgramSession,
 } from "@plasius/learning-road-hopper-rally";
 
 const session = await createRoadHopperProgramSession(
-  ROAD_HOPPER_RALLY_STARTER_PROJECT_V1,
+  ROAD_HOPPER_RALLY_STARTER_PROJECT_V2,
 );
 const frame = await session.step({
   sequence: 1,
@@ -38,7 +45,7 @@ const frame = await session.step({
 });
 session.dispose();
 
-console.log(ROAD_HOPPER_RALLY_COURSE_V2.missions.length, frame.semanticState);
+console.log(ROAD_HOPPER_RALLY_COURSE_V3.missions.length, frame.semanticState);
 ```
 
 Browser adapters must import their runtime and transport contracts from the
@@ -60,4 +67,4 @@ npm run build
 npm run pack:check
 ```
 
-Task: [Plasius-LTD/learning-road-hopper-rally#1](https://github.com/Plasius-LTD/learning-road-hopper-rally/issues/1).
+Tasks: [initial reference module #1](https://github.com/Plasius-LTD/learning-road-hopper-rally/issues/1), [evidence-led revision #6](https://github.com/Plasius-LTD/learning-road-hopper-rally/issues/6).
