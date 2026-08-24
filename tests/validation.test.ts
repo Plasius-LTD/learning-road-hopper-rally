@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   ROAD_HOPPER_RALLY_COURSE_V2,
+  ROAD_HOPPER_RALLY_COURSE_V3,
   ROAD_HOPPER_RALLY_STARTER_PROJECT_V1,
   createRoadHopperEvaluator,
   createRoadHopperProgramSession,
@@ -11,7 +12,9 @@ import {
   parseRoadHopperProgress,
   parseRoadHopperSavedVersion,
   validateRoadHopperCourseManifest,
+  validateRoadHopperCourseManifestV3,
   type RoadHopperCourseManifestV2,
+  type RoadHopperCourseManifestV3,
 } from "../src/index.js";
 
 describe("course publish validation", () => {
@@ -61,6 +64,96 @@ describe("course publish validation", () => {
         ]),
       ),
     );
+  });
+
+  it("rejects evidence activities with a mismatched kind or no correct response", () => {
+    const invalid = structuredClone(ROAD_HOPPER_RALLY_COURSE_V3);
+    const learn = invalid.missions[0]!.stages[0]!;
+    learn.activity.kind = "predict";
+    const inspect = invalid.missions[0]!.stages[5]!;
+    if (inspect.activity.kind === "inspect") {
+      for (const option of inspect.activity.check.options) option.correct = false;
+    }
+
+    const issues = validateRoadHopperCourseManifestV3(
+      invalid as unknown as RoadHopperCourseManifestV3,
+    );
+    expect(issues.filter((entry) => entry.code === "invalid-stage-activity")).toHaveLength(2);
+  });
+
+  it("reports every evidence-led manifest drift without stopping at the first problem", () => {
+    const invalid = structuredClone(ROAD_HOPPER_RALLY_COURSE_V3) as unknown as {
+      schemaVersion: string;
+      starterProject: { starterRevision: string };
+      missions: Array<{
+        id: string;
+        estimatedMinutes: number;
+        editableFileId: string;
+        stages: Array<{ id: string; kind: string; editableFileId: string; activity: Record<string, unknown> }>;
+        learner: { goals: unknown[] };
+        facilitator: { protectedGoals: unknown[] };
+      }>;
+      assets: Array<{ sha256: string }>;
+    };
+    invalid.schemaVersion = "2";
+    invalid.starterProject.starterRevision = "wrong";
+    const first = invalid.missions[0]!;
+    const second = invalid.missions[1]!;
+    first.id = second.id;
+    first.estimatedMinutes = 1;
+    first.editableFileId = "game.js";
+    first.stages.pop();
+    first.stages[0]!.kind = "reward";
+    first.stages[0]!.editableFileId = "board.js";
+    second.stages[0]!.id = first.stages[0]!.id;
+    first.learner.goals = [];
+    first.facilitator.protectedGoals = [];
+    invalid.assets[0]!.sha256 = "bad";
+
+    const issues = validateRoadHopperCourseManifestV3(
+      invalid as unknown as RoadHopperCourseManifestV3,
+    );
+    expect(new Set(issues.map((entry) => entry.code))).toEqual(expect.objectContaining(new Set([
+      "invalid-course-identity",
+      "duplicate-mission-id",
+      "invalid-mission-duration",
+      "invalid-stage-count",
+      "invalid-stage-order",
+      "stage-file-mismatch",
+      "duplicate-stage-id",
+      "invalid-stage-activity",
+      "missing-goal",
+      "invalid-total-stage-count",
+      "invalid-editable-files",
+      "invalid-starter-revision",
+      "invalid-assets",
+    ])));
+
+    const wrongCount = structuredClone(ROAD_HOPPER_RALLY_COURSE_V3);
+    wrongCount.missions.pop();
+    expect(validateRoadHopperCourseManifestV3(
+      wrongCount as unknown as RoadHopperCourseManifestV3,
+    ).map((entry) => entry.code)).toContain("invalid-mission-count");
+  });
+
+  it("rejects missing choice checks and malformed options", () => {
+    const missingCheck = structuredClone(ROAD_HOPPER_RALLY_COURSE_V3);
+    const missingLearn = missingCheck.missions[0]!.stages[0]!;
+    if (missingLearn.activity.kind === "learn") {
+      missingLearn.activity.check = {} as never;
+    }
+    expect(validateRoadHopperCourseManifestV3(
+      missingCheck as unknown as RoadHopperCourseManifestV3,
+    ).map((entry) => entry.code)).toContain("invalid-stage-activity");
+
+    const malformedOption = structuredClone(ROAD_HOPPER_RALLY_COURSE_V3);
+    const malformedLearn = malformedOption.missions[0]!.stages[0]!;
+    if (malformedLearn.activity.kind === "learn") {
+      malformedLearn.activity.check.options[0]!.id = "!";
+    }
+    expect(validateRoadHopperCourseManifestV3(
+      malformedOption as unknown as RoadHopperCourseManifestV3,
+    ).map((entry) => entry.code)).toContain("invalid-stage-activity");
   });
 });
 

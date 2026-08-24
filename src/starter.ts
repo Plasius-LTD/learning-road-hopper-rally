@@ -90,3 +90,11 @@ export const ROAD_HOPPER_RALLY_STARTER_PROJECT_V1: RoadHopperProjectV1 =
       "game.js": gameSource,
     }),
   });
+
+/** Immutable diagnostic baseline for the additive evidence-led 2.1 course. */
+export const ROAD_HOPPER_RALLY_STARTER_PROJECT_V2: RoadHopperProjectV1 =
+  Object.freeze({
+    schemaVersion: "1",
+    starterRevision: "road-hopper-rally-v2.1.0-starter.1",
+    files: ROAD_HOPPER_RALLY_STARTER_PROJECT_V1.files,
+  });

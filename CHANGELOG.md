@@ -5,13 +5,14 @@ All notable changes to this package are documented here.
 ## Unreleased
 
 - **Added**
-  - (placeholder)
+  - Add the immutable Road Hopper Rally 2.1 course export with 54 mission-specific, learner-safe evidence activities.
+  - Add a separately versioned 2.1 diagnostic starter and a server-only assessment-goal helper for fail-closed worker adapters.
 
 - **Changed**
-  - (placeholder)
+  - Strengthen board assessment so array shape alone cannot pass an incorrect route layout.
 
 - **Fixed**
-  - (placeholder)
+  - Require automated proof that reset/starter code fails every mission goal before learner work.
 
 - **Security**
   - (placeholder)

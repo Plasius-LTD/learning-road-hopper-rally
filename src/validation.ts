@@ -3,6 +3,7 @@ import {
   ROAD_HOPPER_FILE_IDS,
   type RoadHopperAudioCueV1,
   type RoadHopperCourseManifestV2,
+  type RoadHopperCourseManifestV3,
   type RoadHopperCourseValidationIssueV1,
   type RoadHopperDrawCommandV1,
   type RoadHopperAssessmentRequestV1,
@@ -34,6 +35,48 @@ const errorCodePattern = /^[A-Z][A-Z0-9_]{0,79}$/u;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function validChoiceCheck(value: unknown): boolean {
+  if (!isRecord(value) || typeof value.prompt !== "string" || value.prompt.length < 12 || !Array.isArray(value.options)) {
+    return false;
+  }
+  const optionIds = new Set<string>();
+  let correct = 0;
+  for (const option of value.options) {
+    if (
+      !isRecord(option)
+      || typeof option.id !== "string"
+      || !identifierPattern.test(option.id)
+      || optionIds.has(option.id)
+      || typeof option.label !== "string"
+      || option.label.length < 1
+      || option.label.length > 240
+      || typeof option.feedback !== "string"
+      || option.feedback.length < 8
+      || option.feedback.length > 360
+      || typeof option.correct !== "boolean"
+    ) return false;
+    optionIds.add(option.id);
+    if (option.correct) correct += 1;
+  }
+  return value.options.length >= 2 && value.options.length <= 5 && correct === 1;
+}
+
+function validStageActivity(stage: RoadHopperCourseManifestV3["missions"][number]["stages"][number]): boolean {
+  const { activity } = stage;
+  if (activity.kind !== stage.kind) return false;
+  switch (activity.kind) {
+    case "learn": return activity.lesson.length >= 2 && activity.lesson.every((line) => line.length >= 12 && line.length <= 480) && validChoiceCheck(activity.check);
+    case "predict": return activity.scenario.length >= 12 && validChoiceCheck(activity.check);
+    case "build": return activity.editRequired && activity.task.length >= 12 && activity.callbackNames.length > 0 && activity.successCriteria.length >= 2;
+    case "run": return activity.requiresFreshRun && activity.task.length >= 12 && activity.observe.length >= 2;
+    case "assess": return activity.passingScore === 100 && activity.errorOutcome === "fail-closed" && identifierPattern.test(activity.goalId);
+    case "inspect": return activity.task.length >= 12 && validChoiceCheck(activity.check);
+    case "fix": return activity.requiresSourceChangeAfterCheck && activity.requiresPassingAssessment && activity.task.length >= 12 && activity.hint.length >= 12;
+    case "explain": return activity.minimumCharacters === 40 && activity.persistResponse === false && activity.prompt.length >= 12 && activity.pointsToInclude.length >= 2;
+    case "reward": return activity.message.length >= 12 && activity.requiredStageKinds.join(",") === ROAD_HOPPER_MISSION_STAGE_ORDER_V2.slice(0, 8).join(",");
+  }
 }
 
 function hasOnlyKeys(value: Record<string, unknown>, allowed: readonly string[]): boolean {
@@ -134,6 +177,47 @@ export function validateRoadHopperCourseManifest(
   if (course.assets.length < 2 || course.assets.some((asset) => !/^[0-9a-f]{64}$/u.test(asset.sha256))) {
     issues.push(issue("invalid-assets", "assets", "Original sprite and audio assets require SHA-256 bindings."));
   }
+  return issues;
+}
+
+/** Validate the additive evidence-led 2.1 course without weakening 2.0 rules. */
+export function validateRoadHopperCourseManifestV3(
+  course: RoadHopperCourseManifestV3,
+): RoadHopperCourseValidationIssueV1[] {
+  const issues: RoadHopperCourseValidationIssueV1[] = [];
+  if (
+    course.schemaVersion !== "3"
+    || course.moduleId !== "junior-coder.road-hopper-rally"
+    || course.moduleVersion !== "2.1.0"
+    || course.estimatedMinutes !== 450
+  ) issues.push(issue("invalid-course-identity", "course", "The immutable evidence-led course identity is invalid."));
+  if (course.missions.length !== 6) {
+    issues.push(issue("invalid-mission-count", "missions", "Road Hopper Rally requires exactly six missions."));
+  }
+  const missionIds = new Set<string>();
+  const stageIds = new Set<string>();
+  const editableFiles = new Set<string>();
+  let stageCount = 0;
+  for (const [missionIndex, mission] of course.missions.entries()) {
+    if (missionIds.has(mission.id)) issues.push(issue("duplicate-mission-id", `missions[${missionIndex}].id`, "Mission IDs must be unique."));
+    missionIds.add(mission.id);
+    editableFiles.add(mission.editableFileId);
+    if (mission.estimatedMinutes !== 75) issues.push(issue("invalid-mission-duration", `missions[${missionIndex}].estimatedMinutes`, "Each mission lasts 75 minutes."));
+    if (mission.stages.length !== ROAD_HOPPER_MISSION_STAGE_ORDER_V2.length) issues.push(issue("invalid-stage-count", `missions[${missionIndex}].stages`, "Each mission requires nine stages."));
+    stageCount += mission.stages.length;
+    for (const [stageIndex, stage] of mission.stages.entries()) {
+      if (stage.kind !== ROAD_HOPPER_MISSION_STAGE_ORDER_V2[stageIndex]) issues.push(issue("invalid-stage-order", `missions[${missionIndex}].stages[${stageIndex}]`, "Stages must follow the evidence journey."));
+      if (stage.editableFileId !== mission.editableFileId) issues.push(issue("stage-file-mismatch", `missions[${missionIndex}].stages[${stageIndex}].editableFileId`, "A stage must edit its mission file."));
+      if (stageIds.has(stage.id)) issues.push(issue("duplicate-stage-id", `missions[${missionIndex}].stages[${stageIndex}].id`, "Stage IDs must be unique."));
+      stageIds.add(stage.id);
+      if (!validStageActivity(stage)) issues.push(issue("invalid-stage-activity", `missions[${missionIndex}].stages[${stageIndex}].activity`, "Each stage requires a valid evidence activity matching its kind."));
+    }
+    if (mission.learner.goals.length === 0 || mission.facilitator.protectedGoals.length === 0) issues.push(issue("missing-goal", `missions[${missionIndex}]`, "Visible and protected goals are required."));
+  }
+  if (stageCount !== 54) issues.push(issue("invalid-total-stage-count", "missions", "Road Hopper Rally requires exactly 54 stages."));
+  if (editableFiles.size !== ROAD_HOPPER_FILE_IDS.length || ROAD_HOPPER_FILE_IDS.some((fileId) => !editableFiles.has(fileId))) issues.push(issue("invalid-editable-files", "missions", "The missions must map one-to-one to the six project files."));
+  if (course.starterProject.starterRevision !== "road-hopper-rally-v2.1.0-starter.1") issues.push(issue("invalid-starter-revision", "starterProject.starterRevision", "The 2.1 course requires its immutable diagnostic starter."));
+  if (course.assets.length < 2 || course.assets.some((asset) => !/^[0-9a-f]{64}$/u.test(asset.sha256))) issues.push(issue("invalid-assets", "assets", "Original assets require SHA-256 bindings."));
   return issues;
 }
 
