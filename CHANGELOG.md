@@ -16,6 +16,20 @@ All notable changes to this package are documented here.
 - **Security**
   - (placeholder)
 
+## [1.1.1] - 2026-08-31
+
+- **Added**
+  - (placeholder)
+
+- **Changed**
+  - (placeholder)
+
+- **Fixed**
+  - (placeholder)
+
+- **Security**
+  - (placeholder)
+
 ## [1.1.0] - 2026-08-24
 
 - **Added**
@@ -39,3 +53,4 @@ All notable changes to this package are documented here.
 
 [1.0.0]: https://github.com/Plasius-LTD/learning-road-hopper-rally/releases/tag/v1.0.0
 [1.1.0]: https://github.com/Plasius-LTD/learning-road-hopper-rally/releases/tag/v1.1.0
+[1.1.1]: https://github.com/Plasius-LTD/learning-road-hopper-rally/releases/tag/v1.1.1
