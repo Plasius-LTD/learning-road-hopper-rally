@@ -4,6 +4,10 @@ All notable changes to this package are documented here.
 
 ## Unreleased
 
+### Changed
+- Refresh npm dependencies and consume the verified learning and game-audio releases.
+
+
 - **Added**
   - (placeholder)
 
