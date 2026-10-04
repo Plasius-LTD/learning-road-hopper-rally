@@ -79,8 +79,8 @@
   },
   "homepage": "https://github.com/Plasius-LTD/learning-road-hopper-rally#readme",
   "dependencies": {
-    "@plasius/game-audio": "^0.1.6",
-    "@plasius/learning": "^0.8.1",
+    "@plasius/game-audio": "^0.1.7",
+    "@plasius/learning": "^0.8.2",
     "quickjs-emscripten": "0.32.0"
   },
   "devDependencies": {
