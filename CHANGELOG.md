@@ -4,6 +4,20 @@ All notable changes to this package are documented here.
 
 ## Unreleased
 
+- **Added**
+  - (placeholder)
+
+- **Changed**
+  - (placeholder)
+
+- **Fixed**
+  - (placeholder)
+
+- **Security**
+  - (placeholder)
+
+## [1.1.6] - 2026-10-11
+
 - Refresh npm dependency lockfile to current supported stable versions (weekly maintenance, 2026-10-11). Refresh published Plasius package baselines after upstream releases.
 
 - **Added**
@@ -126,3 +140,4 @@ All notable changes to this package are documented here.
 [1.1.3]: https://github.com/Plasius-LTD/learning-road-hopper-rally/releases/tag/v1.1.3
 [1.1.4]: https://github.com/Plasius-LTD/learning-road-hopper-rally/releases/tag/v1.1.4
 [1.1.5]: https://github.com/Plasius-LTD/learning-road-hopper-rally/releases/tag/v1.1.5
+[1.1.6]: https://github.com/Plasius-LTD/learning-road-hopper-rally/releases/tag/v1.1.6
