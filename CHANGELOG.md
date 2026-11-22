@@ -4,6 +4,20 @@ All notable changes to this package are documented here.
 
 ## Unreleased
 
+- **Added**
+  - (placeholder)
+
+- **Changed**
+  - (placeholder)
+
+- **Fixed**
+  - (placeholder)
+
+- **Security**
+  - (placeholder)
+
+## [1.1.9] - 2026-11-22
+
 - Refresh supported npm dependency and security tooling baselines; preserve runtime API contracts (weekly maintenance, 2026-11-22).
 
 - **Added**
@@ -177,3 +191,4 @@ All notable changes to this package are documented here.
 [1.1.6]: https://github.com/Plasius-LTD/learning-road-hopper-rally/releases/tag/v1.1.6
 [1.1.7]: https://github.com/Plasius-LTD/learning-road-hopper-rally/releases/tag/v1.1.7
 [1.1.8]: https://github.com/Plasius-LTD/learning-road-hopper-rally/releases/tag/v1.1.8
+[1.1.9]: https://github.com/Plasius-LTD/learning-road-hopper-rally/releases/tag/v1.1.9
